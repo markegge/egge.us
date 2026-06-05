@@ -152,28 +152,34 @@ egge.us/
 
 ## Deploy
 
-Hosted on **Cloudflare Pages** (project `egge-us`). The site is a plain static
-`dist/` — there are two ways to publish it.
+Hosted on **Cloudflare Pages**, connected to this GitHub repo (Git integration).
 
 ### Push to deploy (default)
 
-A GitHub Action ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml))
-builds and deploys to production on **every push to `main`** — no manual step:
+Cloudflare watches `main` and builds + deploys on **every push** — no manual
+step:
 
 ```bash
 git add -A && git commit -m "your message" && git push
 ```
 
-Watch the run under the repo's **Actions** tab, or `gh run watch`. The two
-required secrets — `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` — are
-already configured on the repo (Settings → Secrets and variables → Actions).
-You can also trigger a deploy by hand from the Actions tab ("Run workflow").
+Watch progress in the Cloudflare dashboard under **Workers & Pages → (the
+project) → Deployments**. Build settings (set once when connecting the repo):
+
+| Setting | Value |
+|---|---|
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | `/` |
+| Node version | 22 (via [`.node-version`](.node-version); Astro needs ≥22.12) |
 
 ### Manual deploy (fallback)
 
+From your machine (where the IP-restricted token in `.env` is valid):
+
 ```bash
 npm run build
-npx wrangler pages deploy dist --project-name=egge-us --branch=main
+npx wrangler pages deploy dist --project-name=<project> --branch=main
 ```
 
 Wrangler needs Cloudflare credentials: run `npx wrangler login` once (browser
