@@ -5,5 +5,10 @@
   "compatibility_date": "2026-06-05",
   "assets": {
     "directory": "./dist"
-  }
+  },
+  // Serve the site on the apex domain. www.egge.us 301s to the apex via a
+  // Cloudflare Redirect Rule (not a custom domain).
+  "routes": [
+    { "pattern": "egge.us", "custom_domain": true }
+  ]
 }
