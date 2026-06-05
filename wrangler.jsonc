@@ -6,9 +6,9 @@
   "assets": {
     "directory": "./dist"
   },
-  // Serve the site on the apex domain. www.egge.us 301s to the apex via a
-  // Cloudflare Redirect Rule (not a custom domain).
+  // Serve the site on the apex and www (both as custom domains on the Worker).
   "routes": [
-    { "pattern": "egge.us", "custom_domain": true }
+    { "pattern": "egge.us", "custom_domain": true },
+    { "pattern": "www.egge.us", "custom_domain": true }
   ]
 }
