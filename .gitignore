@@ -1,0 +1,40 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# environment
+.env
+.env.production
+
+# macOS
+.DS_Store
+
+# redundant design-handoff archive
+egge.us.zip
+
+# wrangler local state
+.wrangler/
+
+# internal / personal working material — kept local, NOT in the public repo.
+# (the live screenshots already ship in public/images/; the résumé and the
+#  design handoff are personal. Delete a line here to publish that folder.)
+docs/
+design_handoff_egge_portfolio/
+egge-portfolio-requirements.md
+
+# playwright screenshot scratch
+.playwright-mcp/
+
+# editor
+.vscode/
+.idea/

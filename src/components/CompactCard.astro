@@ -1,0 +1,27 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import CardShot from './CardShot.astro';
+import { renderSummary } from '../lib/summary';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+const { project } = Astro.props;
+const p = project.data;
+const pending = p.pending_label ?? 'Awaiting details';
+const summaryHtml = renderSummary(p.summary.trim());
+---
+
+<article class="card compact">
+  <CardShot p={p} alt={`${p.title} placeholder`} />
+  <div class="card-body">
+    <span class="pending">{pending}</span>
+    <h3>{p.title}</h3>
+    <p class="summary" set:html={summaryHtml}></p>
+    {p.url && p.display_url && (
+      <a class="visit" href={p.url} target="_blank" rel="noopener">
+        {p.display_url} ↗
+      </a>
+    )}
+  </div>
+</article>

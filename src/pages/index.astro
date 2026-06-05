@@ -1,0 +1,192 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import FeatureCard from '../components/FeatureCard.astro';
+import CompactCard from '../components/CompactCard.astro';
+
+// ---- Data-driven Selected work ----
+// One flat list in manual `order` (ascending). Featured projects render in
+// exactly this order; tentative ones become compact "awaiting details" cards
+// at their position. featured:false projects never hit the list, they live in
+// the archive below. (The `category` field stays in the data for possible
+// future regrouping; the page currently renders a single ordered list.)
+const allProjects = await getCollection('projects');
+const featured = allProjects
+  .filter((p) => p.data.featured)
+  .sort((a, b) => a.data.order - b.data.order);
+
+// Running index across FEATURE (non-tentative) cards so the image side
+// alternates down the page: 0 → image right, 1 → image left, 2 → right, …
+let featureIndex = 0;
+const ordered = featured.map((project) =>
+  project.data.tentative
+    ? { project, tentative: true as const }
+    : { project, tentative: false as const, flip: featureIndex++ % 2 === 1 },
+);
+
+// ---- Research & writing ----
+const writingRaw = await getCollection('writing');
+const writing = writingRaw.sort((a, b) => Number(a.id) - Number(b.id));
+
+const archiveRaw = await getCollection('archive');
+const archive = archiveRaw.sort((a, b) => Number(a.id) - Number(b.id));
+---
+
+<Base>
+  <Header />
+
+  <main id="top">
+    <!-- ============ HERO ============ -->
+    <section class="hero" aria-label="Introduction">
+      <div class="container hero-grid">
+        <div class="hero-intro">
+          <p class="eyebrow">Bozeman, Montana · AICP</p>
+          <h1>Mark Egge</h1>
+          <p class="one-liner">
+            Applied data scientist and transportation planner who ships
+            production software, turning messy public-sector data into tools
+            people actually use.
+          </p>
+          <div class="linkrow">
+            <a class="btn btn-cta" href="#work">Selected work</a>
+            <a class="btn btn-ghost" href="https://www.linkedin.com/in/markegge/" target="_blank" rel="noopener">LinkedIn</a>
+            <a class="btn btn-ghost" href="https://github.com/markegge" target="_blank" rel="noopener">GitHub</a>
+            <a class="btn btn-ghost" href="https://eateggs.com" target="_blank" rel="noopener" title="eateggs.com">Personal blog ↗</a>
+          </div>
+        </div>
+        <div class="hero-portrait">
+          <div class="portrait">
+            <img
+              src="/images/mark.jpg"
+              alt="Mark Egge, leaning against a clapboard wall outside in Bozeman, Montana"
+              width="2048"
+              height="2560"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section id="about" class="block">
+      <div class="container">
+        <div class="about-grid">
+          <div class="about-prose">
+            <p class="eyebrow">About</p>
+            <h2 class="section-title">I write the production code, not just the slide deck.</h2>
+            <div style="height:28px"></div>
+            <p>I'm an applied data scientist and transportation planner. I take the messy public-sector data the field runs on (freight flows, transit feeds, probe-vehicle records, ACS tables) and turn it into data and software people actually use.</p>
+            <p>I lead the AI and advanced-analytics practice at <strong>High Street</strong>, where I've worked since 2017, and I scaled internal AI adoption through training and managing a portfolio of firm-specific skills and MCP servers. I sit at the seam between planning domain expertise and real engineering (freight modeling, transit data, GIS, travel demand), writing the production code in Python, TypeScript, and SQL.</p>
+            <p>I'm AICP-credentialed with an <strong>M.S. from Carnegie Mellon's Heinz College</strong>, and I serve on Bozeman's Community Development Board. I work from Bozeman, Montana, which shapes most of what I care about: transit, land use, and the mountains an hour in any direction.</p>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Role</dt><dd>Principal · AI &amp; Analytics<br />High Street</dd></div>
+            <div class="fact"><dt>Credentials</dt><dd>AICP · M.S., Carnegie Mellon</dd></div>
+            <div class="fact"><dt>Stack</dt><dd>Python · TypeScript / JS · SQL · R</dd></div>
+            <div class="fact"><dt>Civic</dt><dd>Gallatin Valley Urban Transportation District · Bozeman Community Development Board</dd></div>
+            <div class="fact"><dt>Based</dt><dd>Bozeman, Montana</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SELECTED WORK ============ -->
+    <section id="work" class="block">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Selected work</p>
+          <h2 class="section-title">Things I've built.</h2>
+          <p class="lede">Production tools and research, each linking out to the live artifact. Go kick the tires.</p>
+        </div>
+
+        <div class="cards">
+          {ordered.map((item) => (
+            item.tentative
+              ? <CompactCard project={item.project} />
+              : <FeatureCard project={item.project} flip={item.flip} />
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESEARCH & WRITING ============ -->
+    <section id="writing" class="block">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Research &amp; writing</p>
+          <h2 class="section-title">Selected publications.</h2>
+          <p class="lede">Reports and papers where the method is the deliverable: federal research, peer-reviewed work, and field-facing explainers.</p>
+        </div>
+
+        <div class="writing-list">
+          {writing.map((w) => (
+            <a class="writing-item" href={w.data.url} target="_blank" rel="noopener">
+              <div>
+                <div class="writing-title">{w.data.title}</div>
+                <div class="writing-meta">
+                  {w.data.role && <span class="pi">{w.data.role}</span>}
+                  {w.data.role ? ' · ' : ''}{w.data.meta}
+                </div>
+              </div>
+              <div class="writing-year">{w.data.year} <span class="writing-arrow">↗</span></div>
+            </a>
+          ))}
+        </div>
+
+        <details class="archive">
+          <summary><span class="chev">›</span> Earlier work &amp; archive</summary>
+          <div class="archive-list">
+            {archive.map((a) => (
+              <a class="archive-row" href={a.data.url} target="_blank" rel="noopener">
+                <b>{a.data.title}</b><span class="meta">{a.data.meta}</span><span class="ext">↗</span>
+              </a>
+            ))}
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ BEYOND WORK ============ -->
+    <section id="beyond" class="block beyond">
+      <div class="container">
+        <div class="beyond-grid">
+          <div>
+            <p class="eyebrow">Beyond work</p>
+            <h2 class="section-title">I like systems.</h2>
+            <div style="height:26px"></div>
+            <p>Away from the keyboard I'm usually outside. I rode the Continental Divide by bike (one of the first five people to do it) and spend winters backcountry skiing the Beartooth and Absaroka ranges around Cooke City. There's long-distance cycling, technical canyoneering and whitewater, and a 22-day private Grand Canyon river trip in the works.</p>
+            <p>Closer to home I bake sourdough, stretch Neapolitan pizza, and chase good coffee and jazz on a hi-fi rig. I've been in and around Bozeman for about twenty years, and I write op-eds and public comment on local land use and governance.</p>
+            <p class="throughline">It's the same instinct every time. I like understanding <em>systems</em>: a freight network, a snowpack, a city, a recipe.</p>
+          </div>
+          <div class="pursuits">
+            <div class="pursuit"><span class="mk">–</span>Continental Divide by bike (one of the first five)</div>
+            <div class="pursuit"><span class="mk">–</span>Backcountry skiing & trail running</div>
+            <div class="pursuit"><span class="mk">–</span>Sourdough &amp; Neapolitan pizza</div>
+            <div class="pursuit"><span class="mk">–</span>Audiophile hi-fi · jazz · specialty coffee</div>
+            <div class="pursuit"><span class="mk">–</span>Bozeman Community Development Board</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER / CONTACT ============ -->
+  <footer id="contact" class="footer">
+    <div class="container">
+      <p class="eyebrow">Get in touch</p>
+      <h2>Let's build something that ships. <a href="mailto:mark@egge.us">mark@egge.us</a></h2>
+      <p class="sub">For product licensing or trading notes on transit data and local-government AI, I'm easy to reach.</p>
+      <div class="footer-links">
+        <a href="mailto:mark@egge.us">Email</a>
+        <a href="https://www.linkedin.com/in/markegge/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/markegge" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://eateggs.com" target="_blank" rel="noopener" title="eateggs.com">Personal blog ↗</a>
+      </div>
+      <div class="footer-bottom">
+        <span class="brand"><b>Mark Egge</b> · Bozeman, Montana</span>
+        <span>© 2026 · Applied data science &amp; transportation planning</span>
+      </div>
+    </div>
+  </footer>
+</Base>

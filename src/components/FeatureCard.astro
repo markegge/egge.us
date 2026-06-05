@@ -1,0 +1,51 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import CardShot from './CardShot.astro';
+import { renderSummary } from '../lib/summary';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  flip: boolean;
+}
+const { project, flip } = Astro.props;
+const p = project.data;
+
+// Status dot: coral "spark" for commercial/flagship, green "live" for live,
+// none for open-source / research chips (matches the reference).
+let dot: 'live' | 'spark' | null = null;
+if (p.status === 'live' || p.status === 'beta') dot = 'live';
+else if (p.status === 'commercial') dot = 'spark';
+
+const shotCaption = p.shot_caption ?? 'Product screenshot';
+const summaryHtml = renderSummary(p.summary.trim());
+---
+
+<article class:list={['card', 'feature', { flip }]}>
+  {/* When flipped, the shot is rendered first so the grid places it on the
+      left. The CSS only swaps the column ratio; DOM order does the side. */}
+  {flip && <CardShot p={p} caption={shotCaption} />}
+  <div class="card-body">
+    <div class="card-tagline">
+      {p.flagship && <span class="flag">Flagship</span>}
+      {p.status_label && (
+        <span class="tag">
+          {dot && <span class:list={['dot', dot]}></span>}
+          {p.status_label}
+        </span>
+      )}
+      {p.role && <span class="sep">·</span>}
+      {p.role && <span class="role">{p.role}</span>}
+    </div>
+    <h3>
+      {p.title}
+      {p.title_suffix && <span class="title-suffix">{p.title_suffix}</span>}
+    </h3>
+    <p class="summary" set:html={summaryHtml}></p>
+    {p.url && p.display_url && (
+      <a class="visit" href={p.url} target="_blank" rel="noopener">
+        {p.display_url} ↗
+      </a>
+    )}
+  </div>
+  {!flip && <CardShot p={p} caption={shotCaption} />}
+</article>

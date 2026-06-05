@@ -1,0 +1,24 @@
+{
+  "name": "egge-us",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mark Egge — applied data science & transportation planning portfolio (egge.us).",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "astro": "^6.4.4",
+    "js-yaml": "^4.2.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "typescript": "^6.0.3"
+  }
+}

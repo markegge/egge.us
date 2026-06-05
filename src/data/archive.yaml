@@ -1,0 +1,15 @@
+# Earlier work & archive (src/data/archive.yaml). Buried under the writing list.
+# Schema: { title, meta, url }
+# URLs are best-known/canonical; confirm before launch.
+
+- title: Bozeman Bicycle & Pedestrian Network Gap Analysis
+  meta: ArcGIS StoryMap
+  url: https://storymaps.arcgis.com/
+
+- title: Pittsburgh Bus Bunching
+  meta: Transit reliability analysis
+  url: https://github.com/markegge
+
+- title: Oil & Gas Drilling Database
+  meta: CMU CREATE Lab
+  url: https://www.cmucreatelab.org/

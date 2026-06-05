@@ -1,0 +1,34 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ShotMotif from './ShotMotif.astro';
+
+/**
+ * The screenshot/motif side of a project card. When the project has a `url`,
+ * the whole shot is wrapped in a link to it (opens in a new tab) so the image
+ * is clickable, mirroring the "visit" link in the card body.
+ */
+interface Props {
+  p: CollectionEntry<'projects'>['data'];
+  caption?: string; // when set, render the small caption pill (feature cards)
+  alt?: string; // image alt; defaults to "<title> product screenshot"
+}
+const { p, caption, alt } = Astro.props;
+const imgAlt = alt ?? `${p.title} product screenshot`;
+---
+
+<div class="card-shot">
+  {p.url ? (
+    <a class="shot-link" href={p.url} target="_blank" rel="noopener" aria-label={`Visit ${p.title}`}>
+      {p.image ? (
+        <img class="shot-img" src={p.image} alt={imgAlt} loading="lazy" />
+      ) : (
+        p.image_kind && <ShotMotif kind={p.image_kind} />
+      )}
+    </a>
+  ) : p.image ? (
+    <img class="shot-img" src={p.image} alt={imgAlt} loading="lazy" />
+  ) : (
+    p.image_kind && <ShotMotif kind={p.image_kind} />
+  )}
+  {caption && <span class="shot-cap">{caption}</span>}
+</div>

@@ -1,0 +1,31 @@
+# Research & writing list (src/data/writing.yaml).
+# Schema: { title, meta, role?, year, url }
+#   role: optional; rendered in accent color as a lead-in to meta.
+#   year: right-aligned mono label (can be a kind: "Tool", "Whitepaper", …).
+# To add an item: append an entry here. No HTML edit required.
+
+- title: AI and Its Role and Use Within State DOTs
+  role: Principal investigator
+  meta: LTRC/STC Final Report 722, ~100 pp. cataloging 60+ production AI use cases across state DOTs, with state-by-state policy analysis.
+  year: Jan 2026
+  url: https://www.ltrc.lsu.edu/pdf/2026/FR_722.pdf
+
+- title: Accessibility Impacts of Transportation Investments
+  meta: Open-source impact tool with WFRC Analytics for measuring the accessibility effects of transportation projects.
+  year: Tool
+  url: https://github.com/WFRCAnalytics/ATO-Impact-Tool
+
+- title: Travel Time Forecasting
+  meta: Whitepaper on methods for forecasting corridor travel times from observed probe data.
+  year: Whitepaper
+  url: https://markegge.github.io/pdf/travel_time_forecasting_whitepaper.pdf
+
+- title: Understanding Transit Systems Using AVL-APC Data
+  meta: Journal of Public Transportation. Peer-reviewed analysis of automatic vehicle location and passenger-count data.
+  year: JPT
+  url: https://digitalcommons.usf.edu/jpt/vol21/iss2/2/
+
+- title: Five Essential Skills for Transportation Data Science
+  meta: Towards Data Science. A field-facing primer on the practical toolkit.
+  year: Essay
+  url: https://towardsdatascience.com/

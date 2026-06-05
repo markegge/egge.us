@@ -1,0 +1,65 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = 'Mark Egge: Applied data science & transportation planning',
+  description = 'Mark Egge is an applied data scientist and transportation planner in Bozeman, Montana, who ships production software, turning messy public-sector data into tools people actually use.',
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').href;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon-monogram.svg" />
+
+    <!-- preload self-hosted variable fonts used above the fold -->
+    <link
+      rel="preload"
+      href="/fonts/Nunito/Nunito-VariableFont_wght.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/Inter/Inter-VariableFont_opsz,wght.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+  </head>
+  <body>
+    <slot />
+
+    <script>
+      // Subtle header rule once you start scrolling.
+      (function () {
+        const header = document.getElementById('siteHeader');
+        if (!header) return;
+        const el = header;
+        const onScroll = function () {
+          el.classList.toggle('scrolled', window.scrollY > 12);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      })();
+    </script>
+  </body>
+</html>
