@@ -123,7 +123,8 @@ These are YAML data files (also collections), edited in place:
 
 ```
 egge.us/
-├── .github/workflows/deploy.yml # CI: build + deploy to CF Pages on push to main
+├── wrangler.jsonc             # Cloudflare Workers static-assets config (serves ./dist)
+├── .node-version              # pins Node 22 for the Cloudflare build
 ├── astro.config.mjs            # static output, site = https://egge.us
 ├── package.json
 ├── tsconfig.json
@@ -152,7 +153,10 @@ egge.us/
 
 ## Deploy
 
-Hosted on **Cloudflare Pages**, connected to this GitHub repo (Git integration).
+Hosted on **Cloudflare** as a **Workers Static-Assets** site (a Worker with no
+server code that just serves `./dist`), connected to this GitHub repo via
+Cloudflare's Git integration (Workers Builds). Config lives in
+[`wrangler.jsonc`](wrangler.jsonc).
 
 ### Push to deploy (default)
 
@@ -163,15 +167,18 @@ step:
 git add -A && git commit -m "your message" && git push
 ```
 
-Watch progress in the Cloudflare dashboard under **Workers & Pages → (the
-project) → Deployments**. Build settings (set once when connecting the repo):
+Watch progress in the Cloudflare dashboard under **Workers & Pages → the Worker
+→ Deployments**. Build settings (set once when connecting the repo):
 
 | Setting | Value |
 |---|---|
 | Build command | `npm run build` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
 | Root directory | `/` |
 | Node version | 22 (via [`.node-version`](.node-version); Astro needs ≥22.12) |
+
+The output directory and project name come from `wrangler.jsonc`
+(`assets.directory = ./dist`, `name = egge-us-site`).
 
 ### Manual deploy (fallback)
 
@@ -179,7 +186,7 @@ From your machine (where the IP-restricted token in `.env` is valid):
 
 ```bash
 npm run build
-npx wrangler pages deploy dist --project-name=<project> --branch=main
+npx wrangler deploy
 ```
 
 Wrangler needs Cloudflare credentials: run `npx wrangler login` once (browser
