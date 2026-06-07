@@ -61,5 +61,85 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
         onScroll();
       })();
     </script>
+
+    <script>
+      // Konami code → hidden arcade. Self-contained, no UI until triggered.
+      (function () {
+        const seq = [
+          'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+          'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+          'KeyB', 'KeyA',
+        ];
+        let pos = 0;
+        let overlay: HTMLDivElement | null = null;
+
+        function closeArcade() {
+          if (overlay) {
+            overlay.remove();
+            overlay = null;
+            document.removeEventListener('keydown', onEsc, true);
+          }
+        }
+        function onEsc(e: KeyboardEvent) {
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            closeArcade();
+          }
+        }
+        function openArcade() {
+          if (overlay) return;
+          overlay = document.createElement('div');
+          overlay.setAttribute('role', 'dialog');
+          overlay.setAttribute('aria-label', 'Hidden arcade');
+          Object.assign(overlay.style, {
+            position: 'fixed', inset: '0', zIndex: '2147483647',
+            background: 'rgba(0,0,0,0.88)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+          });
+
+          const frame = document.createElement('iframe');
+          frame.src = '/arcade/';
+          frame.title = "Clippy's Slop Blaster";
+          Object.assign(frame.style, {
+            width: '92vw', height: '88vh', maxWidth: '900px',
+            border: '0', borderRadius: '8px',
+            boxShadow: '0 12px 60px rgba(0,0,0,0.6)', background: '#008080',
+          });
+
+          const close = document.createElement('button');
+          close.type = 'button';
+          close.setAttribute('aria-label', 'Close arcade');
+          close.textContent = '✕';
+          Object.assign(close.style, {
+            position: 'absolute', top: '16px', right: '20px',
+            width: '40px', height: '40px', borderRadius: '50%',
+            border: '0', cursor: 'pointer', fontSize: '20px',
+            lineHeight: '40px', background: '#fff', color: '#111',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+          });
+          close.addEventListener('click', closeArcade);
+
+          overlay.appendChild(frame);
+          overlay.appendChild(close);
+          overlay.addEventListener('click', function (e: MouseEvent) {
+            if (e.target === overlay) closeArcade();
+          });
+          document.body.appendChild(overlay);
+          document.addEventListener('keydown', onEsc, true);
+          frame.focus();
+        }
+
+        document.addEventListener('keydown', function (e: KeyboardEvent) {
+          if (overlay) return;
+          const t = e.target as HTMLElement | null;
+          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+          pos = e.code === seq[pos] ? pos + 1 : (e.code === seq[0] ? 1 : 0);
+          if (pos === seq.length) {
+            pos = 0;
+            openArcade();
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
