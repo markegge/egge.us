@@ -63,14 +63,50 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
     </script>
 
     <script>
-      // Konami code → hidden arcade. Self-contained, no UI until triggered.
+      // Konami code + Mortal Kombat fatalities → hidden arcade.
+      // Self-contained, no UI until triggered.
       (function () {
-        const seq = [
-          'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-          'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-          'KeyB', 'KeyA',
+        // ── Keyboard mapping for SNES Mortal Kombat (MK1/MK2) inputs ──
+        //   Directions:  Back = ArrowLeft, Forward = ArrowRight,
+        //                Up = ArrowUp, Down = ArrowDown
+        //   Buttons:     High Punch = KeyY, Low Punch = KeyT,
+        //                High Kick  = KeyU, Low Kick  = KeyH,
+        //                Block      = KeyB, Run       = KeyR
+        const BACK = 'ArrowLeft', FWD = 'ArrowRight', UP = 'ArrowUp', DOWN = 'ArrowDown';
+        const HP = 'KeyY', LP = 'KeyT', HK = 'KeyU', LK = 'KeyH', BL = 'KeyB', RUN = 'KeyR';
+
+        // Each trigger is a list of e.code values matched against the trailing keystrokes.
+        const triggers = [
+          // Konami code (kept).
+          [UP, UP, DOWN, DOWN, BACK, FWD, BACK, FWD, 'KeyB', 'KeyA'],
+
+          // ── Classic Mortal Kombat fatalities ──
+          // Sub-Zero (MK1) — Spine Rip: Forward, Down, Forward, High Punch.
+          [FWD, DOWN, FWD, HP],
+          // Scorpion (MK1) — Toasty! (fire breath): Down, Down, Up.
+          [DOWN, DOWN, UP],
+          // Kano (MK1) — Heart Rip: Back, Down, Forward, Low Punch.
+          [BACK, DOWN, FWD, LP],
+          // Johnny Cage (MK1) — Torso Rip: Forward, Forward, Down, Low Punch.
+          [FWD, FWD, DOWN, LP],
+          // Raiden (MK1) — Electrocution: Down, Up, Left, Right, Block.
+          [DOWN, UP, BACK, FWD, BL],
+          // Liu Kang (MK2) — Dragon Bite: Forward, Forward, Down, Down.
+          [FWD, FWD, DOWN, DOWN],
+          // Reptile (MK2) — Tongue: Down, Forward, Forward, High Punch (then more).
+          [DOWN, FWD, FWD, HP],
+          // Jax (MK2) — Arm Rip: Forward, Forward, Back, Back, Low Punch.
+          [FWD, FWD, BACK, BACK, LP],
+          // Kung Lao (MK2) — Hat Throw: Run, Block, High Kick (run-range).
+          [RUN, BL, HK],
+          // Mileena (MK2) — Sai Throw: Back, Forward, Down, High Kick (close).
+          [BACK, FWD, DOWN, HK],
+          // Baraka (MK2) — Blade Lift: Back, Back, Back, Low Kick.
+          [BACK, BACK, BACK, LK],
         ];
-        let pos = 0;
+        const maxLen = Math.max(...triggers.map((t) => t.length));
+        const recent: string[] = [];
+
         let overlay: HTMLDivElement | null = null;
 
         function closeArcade() {
@@ -129,13 +165,25 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
           frame.focus();
         }
 
+        function endsWith(seq: string[]): boolean {
+          if (recent.length < seq.length) return false;
+          const off = recent.length - seq.length;
+          for (let i = 0; i < seq.length; i++) {
+            if (recent[off + i] !== seq[i]) return false;
+          }
+          return true;
+        }
+
         document.addEventListener('keydown', function (e: KeyboardEvent) {
           if (overlay) return;
           const t = e.target as HTMLElement | null;
           if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-          pos = e.code === seq[pos] ? pos + 1 : (e.code === seq[0] ? 1 : 0);
-          if (pos === seq.length) {
-            pos = 0;
+
+          recent.push(e.code);
+          if (recent.length > maxLen) recent.shift();
+
+          if (triggers.some(endsWith)) {
+            recent.length = 0;
             openArcade();
           }
         });
