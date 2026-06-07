@@ -105,11 +105,13 @@ body.touch #instructions { display:none; }
   border:2px inset #808080; padding:4px;
   background:#fff; color:#000;
 }
+#initialsForm .ifRow { display:flex; gap:8px; }
 #initialsForm button {
   font:bold 13px 'Courier New',monospace;
-  padding:6px 18px;
+  padding:6px 16px;
   background:#000080; color:#fff; border:1px solid #fff; cursor:pointer;
 }
+#initialsForm button.skip { background:#808080; }
 #initialsForm .lbl { font:bold 11px 'Courier New',monospace; color:#000080; }
 </style>
 </head>
@@ -120,7 +122,10 @@ body.touch #instructions { display:none; }
   <form id="initialsForm" autocomplete="off">
     <div class="lbl">ENTER YOUR INITIALS</div>
     <input id="initialsInput" maxlength="3" inputmode="latin" placeholder="AAA" aria-label="initials">
-    <button type="submit">SUBMIT</button>
+    <div class="ifRow">
+      <button type="submit">SUBMIT</button>
+      <button type="button" id="skipBtn" class="skip">SKIP ✕</button>
+    </div>
   </form>
 </div>
 <div id="touchUI">
@@ -233,6 +238,8 @@ addEventListener('keydown', e=>{
         initials = initials.slice(0,-1);
       } else if(e.code==='Enter'){
         if(initials.length>=1) submitScore();
+      } else if(e.code==='Escape'){
+        skipScore(); // skip without submitting; just show the board
       }
     } else if(goPhase==='board' || goPhase==='err'){
       if(e.code==='Enter') start();
@@ -255,6 +262,22 @@ async function submitScore(){
     const resp = await r.json();
     lbScores = resp.scores || [];
     myRank = resp.rank || 0;
+    goPhase='board';
+  }catch(err){
+    goPhase='err';
+  }
+}
+
+// ── Skip: don't submit a score, just show the board ──────
+async function skipScore(){
+  if(IS_TOUCH) hideInitialsForm();
+  initials=''; myRank=0; // no row to highlight
+  goPhase='sending';
+  try{
+    const r = await fetch(LB_API+"/scores"); // GET top 10, no POST
+    if(!r.ok) throw new Error('bad status '+r.status);
+    const resp = await r.json();
+    lbScores = resp.scores || [];
     goPhase='board';
   }catch(err){
     goPhase='err';
@@ -311,13 +334,18 @@ function hideInitialsForm(){ initialsForm.classList.remove('show'); }
 function positionInitialsForm(){
   // Center the form over the canvas (which may be CSS-scaled).
   const r=C.getBoundingClientRect();
-  initialsForm.style.left = (r.left + r.width/2 - 90) + 'px';
+  const fw=initialsForm.offsetWidth||190;
+  initialsForm.style.left = (r.left + r.width/2 - fw/2) + 'px';
   initialsForm.style.top  = (r.top  + r.height*0.52) + 'px';
 }
 initialsForm.addEventListener('submit', e=>{
   e.preventDefault();
   const v=(initialsInput.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
   if(v.length>=1){ initials=v; hideInitialsForm(); submitScore(); }
+});
+document.getElementById('skipBtn').addEventListener('click', e=>{
+  e.preventDefault();
+  skipScore(); // no submission; show the board
 });
 addEventListener('resize', ()=>{ if(initialsForm.classList.contains('show')) positionInitialsForm(); });
 
@@ -327,13 +355,25 @@ function canvasPoint(clientX, clientY){
   return { x:(clientX-r.left)*(W/r.width), y:(clientY-r.top)*(H/r.height) };
 }
 // Tap-to-start / tap-to-play-again on the canvas (title + game-over board/err).
-function handleCanvasTap(){
+// During the initials step, a click on the title-bar [X] skips submitting.
+function handleCanvasTap(px, py){
   if(state==='title'){ start(); return; }
-  if(state==='over' && (goPhase==='board' || goPhase==='err')){ start(); return; }
-  // (enter phase uses the on-screen initials form on touch devices)
+  if(state==='over'){
+    if(goPhase==='enter' && px!=null){
+      const xb=goCloseRect();
+      if(px>=xb.x-4 && px<=xb.x+xb.w+4 && py>=xb.y-4 && py<=xb.y+xb.h+4){ skipScore(); return; }
+    }
+    if(goPhase==='board' || goPhase==='err'){ start(); return; }
+  }
+  // (enter phase otherwise uses keyboard / the on-screen initials form)
 }
-C.addEventListener('click', handleCanvasTap);
-C.addEventListener('touchend', e=>{ e.preventDefault(); handleCanvasTap(); }, {passive:false});
+C.addEventListener('click', e=>{ const p=canvasPoint(e.clientX,e.clientY); handleCanvasTap(p.x,p.y); });
+C.addEventListener('touchend', e=>{
+  e.preventDefault();
+  const t=e.changedTouches && e.changedTouches[0];
+  if(t){ const p=canvasPoint(t.clientX,t.clientY); handleCanvasTap(p.x,p.y); }
+  else handleCanvasTap();
+}, {passive:false});
 
 // ── Helpers ──────────────────────────────────────────────
 const rnd  = (a,b)=> a + Math.random()*(b-a);
@@ -726,10 +766,19 @@ function drawTitle(){
   }
 }
 
+// Game-over dialog geometry (kept in sync with drawGameOver).
+const GO_DW=360, GO_DH=340;
+function goDialog(){ return { dw:GO_DW, dh:GO_DH, dx:(W-GO_DW)/2, dy:(H-GO_DH)/2 }; }
+// Title-bar [X] (skip) button rect.
+function goCloseRect(){
+  const {dx,dy,dw}=goDialog();
+  return { x:dx+dw-22, y:dy+5, w:17, h:17 };
+}
+
 function drawGameOver(){
   ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,W,H);
 
-  const dw=360,dh=340, dx=(W-dw)/2, dy=(H-dh)/2;
+  const dw=GO_DW,dh=GO_DH, dx=(W-dw)/2, dy=(H-dh)/2;
   const cx=dx+dw/2;
   ctx.fillStyle='#c0c0c0'; ctx.fillRect(dx,dy,dw,dh);
   ctx.strokeStyle='#fff'; ctx.lineWidth=2;
@@ -745,6 +794,20 @@ function drawGameOver(){
   ctx.fillStyle='#fff'; ctx.font='bold 12px Arial';
   ctx.textBaseline='middle'; ctx.textAlign='left';
   ctx.fillText('❌ FATAL ERROR — Literature Lost', dx+8, dy+15);
+
+  // Win95 [X] close button in the title bar — during the initials step it
+  // SKIPS submitting and just shows the board. (Click handled on canvas.)
+  if(goPhase==='enter'){
+    const xb=goCloseRect();
+    ctx.fillStyle='#c0c0c0'; ctx.fillRect(xb.x,xb.y,xb.w,xb.h);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xb.x,xb.y); ctx.lineTo(xb.x+xb.w,xb.y); ctx.lineTo(xb.x,xb.y); ctx.lineTo(xb.x,xb.y+xb.h); ctx.stroke();
+    ctx.strokeStyle='#808080';
+    ctx.beginPath(); ctx.moveTo(xb.x+xb.w,xb.y); ctx.lineTo(xb.x+xb.w,xb.y+xb.h); ctx.lineTo(xb.x,xb.y+xb.h); ctx.stroke();
+    ctx.fillStyle='#000'; ctx.font='bold 12px Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('✕', xb.x+xb.w/2, xb.y+xb.h/2+1);
+  }
 
   if(goPhase==='enter'){
     ctx.fillStyle='#000'; ctx.font='bold 22px "Courier New"';
@@ -774,6 +837,8 @@ function drawGameOver(){
 
     ctx.fillStyle='#444'; ctx.font='10px "Courier New"';
     ctx.fillText(IS_TOUCH ? 'enter initials below · SUBMIT' : 'type 3 letters · ENTER to submit', cx, dy+232);
+    ctx.fillStyle='#666'; ctx.font='9px "Courier New"';
+    ctx.fillText(IS_TOUCH ? 'or SKIP ✕ to just see the board' : 'or [✕] / Esc to skip & see the board', cx, dy+248);
 
     drawClippy(dx+44, dy+dh-46, 1.4);
 

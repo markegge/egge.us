@@ -202,47 +202,60 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
           }
         });
 
-        // ── Mobile trigger: long-press the ME monogram brand mark ──
-        // Keyboard codes (Konami/MK) don't exist on phones, so on touch
-        // devices a ~800ms press-and-hold on the logo opens the same overlay.
-        // A short tap still navigates home; only a fired long-press is suppressed.
+        // ── Mobile trigger: 5 quick taps on the ME monogram brand mark ──
+        // Keyboard codes (Konami/MK) don't exist on phones. We avoid long-press
+        // (iOS shows the Safari link preview / context menu) and instead use a
+        // secret 5-tap sequence on the logo within a ~2.5s window.
+        //   - 1st tap: allow default (the logo is an in-page #top anchor).
+        //   - taps 2–5: preventDefault so they neither navigate nor trigger
+        //     iOS double-tap-to-zoom.
+        //   - 5th tap within the window opens the overlay; counter resets on timeout.
         const isTouch =
           matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
         if (isTouch) {
           const brand = document.querySelector<HTMLElement>('.brand, .brand-mark');
           if (brand) {
-            let holdTimer: number | null = null;
-            let longFired = false;
-            const HOLD_MS = 800;
+            const NEEDED = 5;
+            const WINDOW_MS = 2500;
+            let taps = 0;
+            let resetTimer: number | null = null;
 
-            const startHold = function () {
-              longFired = false;
-              if (holdTimer !== null) clearTimeout(holdTimer);
-              holdTimer = window.setTimeout(function () {
-                longFired = true;
-                holdTimer = null;
-                openArcade();
-              }, HOLD_MS);
+            const armReset = function () {
+              if (resetTimer !== null) clearTimeout(resetTimer);
+              resetTimer = window.setTimeout(function () {
+                taps = 0;
+                resetTimer = null;
+              }, WINDOW_MS);
             };
-            const cancelHold = function () {
-              if (holdTimer !== null) {
-                clearTimeout(holdTimer);
-                holdTimer = null;
+
+            // Count on pointerdown/touchstart and suppress the default of the
+            // 2nd–5th taps before the browser acts on them (navigation / zoom).
+            const onTap = function (e: Event) {
+              taps += 1;
+              if (taps >= 2) {
+                e.preventDefault();
               }
+              if (taps >= NEEDED) {
+                taps = 0;
+                if (resetTimer !== null) {
+                  clearTimeout(resetTimer);
+                  resetTimer = null;
+                }
+                openArcade();
+                return;
+              }
+              armReset();
             };
+            brand.addEventListener('touchstart', onTap, { passive: false });
 
-            brand.addEventListener('touchstart', startHold, { passive: true });
-            brand.addEventListener('touchend', cancelHold);
-            brand.addEventListener('touchmove', cancelHold, { passive: true });
-            brand.addEventListener('touchcancel', cancelHold);
-            // Suppress the navigating click ONLY when the long-press fired.
+            // Also suppress the synthesized click for taps 2+ so they don't
+            // navigate to #top while building the sequence.
             brand.addEventListener(
               'click',
               function (e: MouseEvent) {
-                if (longFired) {
+                if (taps >= 2 || overlay) {
                   e.preventDefault();
                   e.stopPropagation();
-                  longFired = false;
                 }
               },
               true
