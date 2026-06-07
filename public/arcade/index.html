@@ -6,6 +6,7 @@
 <title>Clippy's Slop Blaster</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; }
 body {
   background:#008080;
   display:flex;
@@ -15,11 +16,23 @@ body {
   min-height:100vh;
   overflow:hidden;
   font-family:'Courier New',monospace;
+  -webkit-user-select:none; user-select:none;
+  touch-action:none;
+}
+#stage {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 }
 canvas {
   display:block;
   cursor:crosshair;
   image-rendering:pixelated;
+  /* Scale down to fit small viewports; internal resolution stays fixed. */
+  max-width:100vw;
+  max-height:88vh;
+  touch-action:none;
 }
 #instructions {
   color:#fff;
@@ -28,11 +41,97 @@ canvas {
   text-shadow:1px 1px #000;
   letter-spacing:.5px;
 }
+
+/* ── Mobile touch controls (hidden by default; shown via .touch on body) ── */
+#touchUI { display:none; }
+body.touch #touchUI {
+  display:block;
+  position:fixed;
+  left:0; right:0; bottom:0;
+  height:170px;
+  pointer-events:none;
+  z-index:20;
+}
+body.touch #instructions { display:none; }
+.pad {
+  position:absolute;
+  pointer-events:auto;
+  -webkit-user-select:none; user-select:none;
+}
+#dpad { left:14px; bottom:14px; width:150px; height:150px; }
+#dpad .dbtn {
+  position:absolute;
+  width:48px; height:48px;
+  background:rgba(192,192,192,0.82);
+  border:2px solid #fff;
+  border-right-color:#808080; border-bottom-color:#808080;
+  color:#000080; font:bold 20px 'Courier New',monospace;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:6px;
+}
+#dpad .dbtn:active { background:rgba(0,0,128,0.85); color:#fff; }
+#dpad .up    { left:51px; top:0; }
+#dpad .down  { left:51px; top:102px; }
+#dpad .left  { left:0;   top:51px; }
+#dpad .right { left:102px; top:51px; }
+#fireBtn {
+  right:18px; bottom:34px; width:104px; height:104px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #ff9944, #cc4400);
+  border:3px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  color:#fff; font:bold 18px 'Courier New',monospace;
+  display:flex; align-items:center; justify-content:center;
+  text-shadow:1px 1px #000;
+}
+#fireBtn:active { transform:translateY(2px); filter:brightness(1.15); }
+
+/* On-screen initials entry (mobile game-over) */
+#initialsForm {
+  display:none;
+  position:absolute;
+  z-index:30;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  background:#c0c0c0;
+  border:2px solid #fff; border-right-color:#808080; border-bottom-color:#808080;
+  padding:12px 14px;
+  font-family:'Courier New',monospace;
+}
+#initialsForm.show { display:flex; }
+#initialsForm input {
+  font:bold 28px 'Courier New',monospace;
+  text-transform:uppercase;
+  width:130px; text-align:center; letter-spacing:10px;
+  border:2px inset #808080; padding:4px;
+  background:#fff; color:#000;
+}
+#initialsForm button {
+  font:bold 13px 'Courier New',monospace;
+  padding:6px 18px;
+  background:#000080; color:#fff; border:1px solid #fff; cursor:pointer;
+}
+#initialsForm .lbl { font:bold 11px 'Courier New',monospace; color:#000080; }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="instructions">ARROWS/WASD = move &nbsp;|&nbsp; SPACE = shoot &nbsp;|&nbsp; ENTER = start</div>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="instructions">ARROWS/WASD = move &nbsp;|&nbsp; SPACE = shoot &nbsp;|&nbsp; ENTER = start</div>
+  <form id="initialsForm" autocomplete="off">
+    <div class="lbl">ENTER YOUR INITIALS</div>
+    <input id="initialsInput" maxlength="3" inputmode="latin" placeholder="AAA" aria-label="initials">
+    <button type="submit">SUBMIT</button>
+  </form>
+</div>
+<div id="touchUI">
+  <div id="dpad" class="pad">
+    <div class="dbtn up"    data-dir="up">▲</div>
+    <div class="dbtn down"  data-dir="down">▼</div>
+    <div class="dbtn left"  data-dir="left">◀</div>
+    <div class="dbtn right" data-dir="right">▶</div>
+  </div>
+  <div id="fireBtn" class="pad">FIRE</div>
+</div>
 <script>
 // ════════════════════════════════════════════════════════
 //  CLIPPY'S SLOP BLASTER  —  a millennial fever dream
@@ -115,9 +214,13 @@ const P = { x:W*0.12, y:H/2-20, w:34, h:44, spd:4.8 };
 
 // ── Input ────────────────────────────────────────────────
 const K={};
+// Game-control keys we own: prevent default so they don't scroll the page
+// (important when embedded in the egge.us overlay iframe) or leak to the parent.
+const GAME_KEYS = new Set(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter']);
 addEventListener('keydown', e=>{
   K[e.code]=true;
-  if(e.code==='Space'){e.preventDefault(); if(state==='playing') fire();}
+  if(GAME_KEYS.has(e.code)) e.preventDefault();
+  if(e.code==='Space'){ if(state==='playing') fire(); }
   if(e.code==='Enter' && state==='title'){ start(); return; }
 
   // ── Game-over arcade flow ──
@@ -158,6 +261,80 @@ async function submitScore(){
   }
 }
 
+// ── Mobile / touch support ───────────────────────────────
+const IS_TOUCH = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+const initialsForm  = document.getElementById('initialsForm');
+const initialsInput = document.getElementById('initialsInput');
+
+if(IS_TOUCH){
+  document.body.classList.add('touch');
+
+  // D-pad: press sets the matching movement flag, release clears it.
+  const DIR_KEY = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
+  document.querySelectorAll('#dpad .dbtn').forEach(btn=>{
+    const code = DIR_KEY[btn.dataset.dir];
+    const press   = e=>{ e.preventDefault(); K[code]=true; };
+    const release = e=>{ e.preventDefault(); K[code]=false; };
+    btn.addEventListener('touchstart', press, {passive:false});
+    btn.addEventListener('touchend',   release);
+    btn.addEventListener('touchcancel',release);
+    btn.addEventListener('mousedown',  press);
+    btn.addEventListener('mouseup',    release);
+    btn.addEventListener('mouseleave', release);
+  });
+
+  // FIRE button: fire while playing; repeat-fire when held.
+  let fireHold=false, fireTimer=null;
+  const fireBtn = document.getElementById('fireBtn');
+  const startFire = e=>{
+    e.preventDefault(); fireHold=true;
+    if(state==='playing') fire();
+    if(!fireTimer) fireTimer=setInterval(()=>{ if(fireHold && state==='playing') fire(); }, 120);
+  };
+  const stopFire = ()=>{ fireHold=false; if(fireTimer){ clearInterval(fireTimer); fireTimer=null; } };
+  fireBtn.addEventListener('touchstart', startFire, {passive:false});
+  fireBtn.addEventListener('touchend', stopFire);
+  fireBtn.addEventListener('touchcancel', stopFire);
+  fireBtn.addEventListener('mousedown', startFire);
+  fireBtn.addEventListener('mouseup', stopFire);
+  fireBtn.addEventListener('mouseleave', stopFire);
+}
+
+// On-screen initials entry (mobile game-over enter phase).
+function showInitialsForm(){
+  initialsInput.value='';
+  initialsForm.classList.add('show');
+  positionInitialsForm();
+  setTimeout(()=>initialsInput.focus(), 30);
+}
+function hideInitialsForm(){ initialsForm.classList.remove('show'); }
+function positionInitialsForm(){
+  // Center the form over the canvas (which may be CSS-scaled).
+  const r=C.getBoundingClientRect();
+  initialsForm.style.left = (r.left + r.width/2 - 90) + 'px';
+  initialsForm.style.top  = (r.top  + r.height*0.52) + 'px';
+}
+initialsForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const v=(initialsInput.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  if(v.length>=1){ initials=v; hideInitialsForm(); submitScore(); }
+});
+addEventListener('resize', ()=>{ if(initialsForm.classList.contains('show')) positionInitialsForm(); });
+
+// Map a client (touch/mouse) point to canvas coordinates (handles CSS scaling).
+function canvasPoint(clientX, clientY){
+  const r=C.getBoundingClientRect();
+  return { x:(clientX-r.left)*(W/r.width), y:(clientY-r.top)*(H/r.height) };
+}
+// Tap-to-start / tap-to-play-again on the canvas (title + game-over board/err).
+function handleCanvasTap(){
+  if(state==='title'){ start(); return; }
+  if(state==='over' && (goPhase==='board' || goPhase==='err')){ start(); return; }
+  // (enter phase uses the on-screen initials form on touch devices)
+}
+C.addEventListener('click', handleCanvasTap);
+C.addEventListener('touchend', e=>{ e.preventDefault(); handleCanvasTap(); }, {passive:false});
+
 // ── Helpers ──────────────────────────────────────────────
 const rnd  = (a,b)=> a + Math.random()*(b-a);
 const rndI = (a,b)=> a + Math.floor(Math.random()*(b-a));
@@ -170,6 +347,7 @@ function start(){
   nextSpawn=90; nextTip=350; tipMsg=null; shake=0;
   bullets.length=0; blocks.length=0; sparks.length=0;
   P.x=W*0.12; P.y=H/2-20;
+  if(IS_TOUCH) hideInitialsForm();
 }
 
 function fire(){
@@ -280,7 +458,10 @@ function update(){
   }
 
   if(shake>0) shake*=0.82;
-  if(lives<=0){ lives=0; state='over'; shake=0; goPhase='enter'; initials=''; }
+  if(lives<=0){
+    lives=0; state='over'; shake=0; goPhase='enter'; initials='';
+    if(IS_TOUCH) showInitialsForm();
+  }
 }
 
 // ── Draw helpers ─────────────────────────────────────────
@@ -536,7 +717,13 @@ function drawTitle(){
   ctx.strokeRect(W/2-60, dy+dh-46, 120+80*(pulse-0.6), 30);
   ctx.fillStyle='#fff'; ctx.font='bold 13px "Courier New"';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('▶  PRESS ENTER  ◀', W/2+20*(pulse-0.6), dy+dh-31);
+  ctx.fillText(IS_TOUCH ? '▶  TAP TO START  ◀' : '▶  PRESS ENTER  ◀', W/2+20*(pulse-0.6), dy+dh-31);
+
+  // Portrait hint
+  if(IS_TOUCH && H>W){
+    ctx.fillStyle='#800000'; ctx.font='bold 11px "Courier New"';
+    ctx.fillText('↻ best in landscape', W/2, dy+dh-12);
+  }
 }
 
 function drawGameOver(){
@@ -586,7 +773,7 @@ function drawGameOver(){
     }
 
     ctx.fillStyle='#444'; ctx.font='10px "Courier New"';
-    ctx.fillText('type 3 letters · ENTER to submit', cx, dy+232);
+    ctx.fillText(IS_TOUCH ? 'enter initials below · SUBMIT' : 'type 3 letters · ENTER to submit', cx, dy+232);
 
     drawClippy(dx+44, dy+dh-46, 1.4);
 
@@ -647,7 +834,7 @@ function drawGameOver(){
     ctx.strokeRect(cx-90, dy+dh-44, 180, 30);
     ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('ENTER = Play Again', cx, dy+dh-29);
+    ctx.fillText(IS_TOUCH ? 'TAP TO PLAY AGAIN' : 'ENTER = Play Again', cx, dy+dh-29);
 
   } else { // err
     drawClippy(cx, dy+140, 2);
@@ -662,7 +849,7 @@ function drawGameOver(){
     ctx.strokeRect(cx-90, dy+dh-44, 180, 30);
     ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('ENTER = Play Again', cx, dy+dh-29);
+    ctx.fillText(IS_TOUCH ? 'TAP TO PLAY AGAIN' : 'ENTER = Play Again', cx, dy+dh-29);
   }
 }
 

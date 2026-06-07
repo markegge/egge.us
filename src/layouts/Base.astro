@@ -141,6 +141,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
             border: '0', borderRadius: '8px',
             boxShadow: '0 12px 60px rgba(0,0,0,0.6)', background: '#008080',
           });
+          // Same-origin iframe: focus it once loaded so keyboard input (arrows,
+          // Enter, space) reaches the game instead of scrolling the page behind.
+          frame.addEventListener('load', function () {
+            frame.focus();
+            frame.contentWindow?.focus();
+          });
 
           const close = document.createElement('button');
           close.type = 'button';
@@ -160,9 +166,17 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
           overlay.addEventListener('click', function (e: MouseEvent) {
             if (e.target === overlay) closeArcade();
           });
+          // A click/tap anywhere on the overlay re-grabs focus into the game.
+          overlay.addEventListener('pointerdown', function (e: PointerEvent) {
+            if (e.target !== close) {
+              frame.focus();
+              frame.contentWindow?.focus();
+            }
+          });
           document.body.appendChild(overlay);
           document.addEventListener('keydown', onEsc, true);
           frame.focus();
+          frame.contentWindow?.focus();
         }
 
         function endsWith(seq: string[]): boolean {
@@ -187,6 +201,54 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://egge.us').h
             openArcade();
           }
         });
+
+        // ── Mobile trigger: long-press the ME monogram brand mark ──
+        // Keyboard codes (Konami/MK) don't exist on phones, so on touch
+        // devices a ~800ms press-and-hold on the logo opens the same overlay.
+        // A short tap still navigates home; only a fired long-press is suppressed.
+        const isTouch =
+          matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+        if (isTouch) {
+          const brand = document.querySelector<HTMLElement>('.brand, .brand-mark');
+          if (brand) {
+            let holdTimer: number | null = null;
+            let longFired = false;
+            const HOLD_MS = 800;
+
+            const startHold = function () {
+              longFired = false;
+              if (holdTimer !== null) clearTimeout(holdTimer);
+              holdTimer = window.setTimeout(function () {
+                longFired = true;
+                holdTimer = null;
+                openArcade();
+              }, HOLD_MS);
+            };
+            const cancelHold = function () {
+              if (holdTimer !== null) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+              }
+            };
+
+            brand.addEventListener('touchstart', startHold, { passive: true });
+            brand.addEventListener('touchend', cancelHold);
+            brand.addEventListener('touchmove', cancelHold, { passive: true });
+            brand.addEventListener('touchcancel', cancelHold);
+            // Suppress the navigating click ONLY when the long-press fired.
+            brand.addEventListener(
+              'click',
+              function (e: MouseEvent) {
+                if (longFired) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  longFired = false;
+                }
+              },
+              true
+            );
+          }
+        }
       })();
     </script>
   </body>
