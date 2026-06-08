@@ -8,7 +8,7 @@ featured: true
 flagship: false
 tentative: false
 order: 90
-image_kind: network
+image: /images/oppdesk.png
 status: beta
 status_label: Beta testing
 summary: >
