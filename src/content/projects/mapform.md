@@ -1,13 +1,13 @@
 ---
 title: Mapform
-category: Transit & Planning Tools
-role: Role to come
+category: GIS & Planning Tools
+role: Builder
 featured: true
 flagship: false
 tentative: true
 order: 80
 image_kind: mapform
-pending_label: Awaiting details
+pending_label: In development
 summary: >
-  Description, URL, status, and Mark's role still to come. Placeholder card so it slots into the Transit & Planning group when the details land.
+  Modern, drop-in replacement for Esri's Survey123 spatial survey product. Accomodates multiple geometry types within a single survey. Allows schema changes after publication. Includes an MCP server as a first-class interface for authoring surveys and accessing results. Simple and delightful to use. Spatial components, results storage, and authentication all via ArcGIS Online, proxied through a PostgreSQL buffer database. [Example Survey](https://s.mapform.highstreet.work/?id=mapform-demo)
 ---

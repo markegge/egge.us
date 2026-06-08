@@ -33,6 +33,7 @@ const projects = defineCollection({
     category: z.enum([
       'AI & Automation',
       'Transit & Planning Tools',
+      'GIS & Planning Tools',
       'Research & Open Source',
     ]),
     status: z
