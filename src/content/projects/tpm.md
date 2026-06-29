@@ -10,7 +10,7 @@ role: Author
 featured: true
 flagship: false
 tentative: false
-order: 70
+order: 100
 image: /images/tpm.png
 image_kind: tpm
 shot_caption: Documentation

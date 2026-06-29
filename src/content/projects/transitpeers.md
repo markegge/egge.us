@@ -1,5 +1,5 @@
 ---
-title: TransitPeers
+title: Transit Peers
 url: https://www.transitpeers.net
 display_url: transitpeers.net
 category: Transit & Planning Tools
