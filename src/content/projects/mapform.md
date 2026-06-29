@@ -1,6 +1,6 @@
 ---
 title: Mapform
-url: https://mapform.io/about
+url: https://mapform.io
 display_url: mapform.io
 category: GIS & Planning Tools
 role: Builder
