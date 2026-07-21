@@ -1,7 +1,7 @@
 ---
 title: CDOT TDM Calculator
-url: https://high-street.bitbucket.io/cdot_tdm_calculator/#/area
-display_url: high-street.bitbucket.io/cdot_tdm_calculator
+url: https://tdm.highstreet.work
+display_url: tdm.highstreet.work
 category: Transit & Planning Tools
 status: live
 status_label: Live · Web tool
