@@ -1,7 +1,7 @@
 ---
 title: ACCAP Fact Sheets / Dashboard
-url: https://high-street.bitbucket.io/accap_factsheets/
-display_url: high-street.bitbucket.io/accap_factsheets
+url: https://accap.akml.org/
+display_url: accap.akml.org
 category: Transit & Planning Tools
 status: live
 status_label: Live · Dashboard

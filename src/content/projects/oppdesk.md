@@ -9,8 +9,7 @@ flagship: false
 tentative: false
 order: 90
 image: /images/oppdesk.png
-status: beta
-status_label: Beta testing
+status_label: Retired
 summary: >
-  An AI-powered procurement opportunity aggregator targeting state DOTs and MPOs that are largely missing from other procurement aggregators. Handles multiple common procurement platforms as well as custom web pages an email subscriptions. Uses AI to score opportunities versus the organization's target profile to automatically surface only relevant opportunities. Database includes more than 300 transportation agencies or MPOs.
+  An AI-powered procurement opportunity aggregator targeting state DOTs and MPOs that were largely missing from other procurement aggregators. Handled multiple common procurement platforms as well as custom web pages and email subscriptions. Used AI to score opportunities against the organization's target profile to automatically surface only relevant ones. The database covered more than 300 transportation agencies and MPOs.
 ---
